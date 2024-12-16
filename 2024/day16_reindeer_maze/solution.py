@@ -1,8 +1,12 @@
+# Have to keep track of n (number of turns) to get to the same position *and* facing the same direction
+# This code counts extra paths that require more turns to get to the same position facing the same direction
+
 class Node:
-    def __init__(self, i, j, direction, blocked):
+    def __init__(self, i, j, direction, add_turn_cost, blocked):
         self.i = i
         self.j = j
         self.direction = direction
+        self.add_turn_cost = False
         self.blocked = blocked
 
     def __repr__(self):
@@ -21,8 +25,10 @@ class ReindeerMaze:
         self.cost = [[None for col in row] for row in self.maze]
         self.cost[self.start[0]][self.start[1]] = 0
 
+        self.previous_tiles = [[list() for col in row] for row in self.maze]
+
     def __repr__(self):
-        return "\n".join(["".join(s) for s in self.maze])
+        return "\n".join([" ".join((str(i) for i in s)) for s in self.maze])
 
     def _read_input(self, filename):
         with open(filename) as file:
@@ -34,6 +40,9 @@ class ReindeerMaze:
                     if self.maze[i][j] == "E":
                         self.end = i, j
             return True
+
+    def get_cost(self, cost, n):
+        return cost + n*1000
 
     def clockwise(self, direction):
         return (direction + 1) % 4
@@ -47,8 +56,7 @@ class ReindeerMaze:
         cw = (forward + 1) % 4
         ccw = (forward - 1) % 4
 
-        horizon = [Node(*self.start, self.start_direction, False)]
-        print(self.cost)
+        horizon = [Node(*self.start, self.start_direction, False, False)]
 
         # for each element on horizon
         # check to both sides -> if free, append to next horizon list
@@ -68,87 +76,71 @@ class ReindeerMaze:
 
                     if self.maze[left_i][left_j] != "#":
                         if self.cost[left_i][left_j] is None:
-                            next_horizon.append(Node(node.i, node.j, ccw, False))
+                            next_horizon.append(Node(node.i, node.j, ccw, True, False))
                     if self.maze[right_i][right_j] != "#":
                         if self.cost[right_i][right_j] is None:
-                            next_horizon.append(Node(node.i, node.j, cw, False))
+                            next_horizon.append(Node(node.i, node.j, cw, True, False))
 
                     if self.maze[node.i + self.directions[direction][0]][node.j + self.directions[direction][1]] == '#':
                         node.blocked = True
                     else:
                         cost = self.cost[node.i][node.j]
+                        i, j = node.i, node.j
                         node.i += self.directions[direction][0]
                         node.j += self.directions[direction][1]
+
                         if self.cost[node.i][node.j] is None:
                             self.cost[node.i][node.j] = cost + 1
+                            self.previous_tiles[node.i][node.j].append(((i, j), cost))
                         else:
-                            self.cost[node.i][node.j] = min(self.cost[node.i][node.j], cost + 1)
+                            # print(node.i, node.j, self.cost[node.i][node.j], cost + 1)
+                            if self.cost[node.i][node.j] >= cost + 1:
+                                self.cost[node.i][node.j] = cost + 1
+                                self.previous_tiles[node.i][node.j].append(((i, j), cost))
 
                         if self.maze[node.i][node.j] == "E":
-                            return (self.cost[node.i][node.j] + 1000*n, direction)
+                            return (self.cost[node.i][node.j] + n*1000, direction)
 
                 horizon = [node for node in horizon if not node.blocked]
 
-            horizon = next_horizon
+            horizon = list(set(next_horizon))
             n += 1
-            print(horizon, n)
+            # print(horizon, n)
                 
-    '''def explore(self, i, j, direction):
-        cost, forward = self.cost_dir[i][j]
-        if cost is None:
-            return
-        clockwise = (forward + 1) % 4
-        counterclockwise = (forward - 1) % 4
+    def tiles_on_best_path(self):
+        n = self.cost[self.end[0]][self.end[1]]
+        #print(n)
+        horizon = [self.end]
+        tiles = 1
 
-        p, q = i + self.directions[forward][0], j + self.directions[forward][1]
-        to_explore = []
-        while self.maze[p][q] != "#":
-            for d in [self.directions[clockwise], self.directions[counterclockwise]]:
-                if self.maze[p + d[0]][q + d[1]] != "#":
-                    to_explore.append(((p, q), d))
+        while n > 0:
+            next_horizon = []
+            for node in horizon:
+                for tile, cost in self.previous_tiles[node[0]][node[1]]:
+                    if cost == n - 1:
+                        next_horizon.append(tile)
+                        self.maze[tile[0]][tile[1]] = cost % 10
+            n -= 1
+            horizon = list(set(next_horizon))
+            tiles += len(horizon)
+            #print(n, tiles, horizon)
 
-            p, q = p + self.directions[forward][0], q + self.directions[forward][1]
-
-    def get_neighbours(self, i, j, direction):
-        dirs = [self.directions[direction], self.directions[(direction + 1) % len(self.directions)],
-        self.directions[(direction - 1) % len(self.directions)]]
-
-        neighbours = []
-        for d in dirs:
-            if self.maze[i + d[0]][j + d[1]] != "#":
-                # self.maze[i + d[0]][j + d[1]] = "*"
-                cost = self.cost[i][j]
-                if d == self.directions[direction]:
-                    cost += 1
-                else:
-                    cost += 1000
-                neighbours.append(((i + d[0], j + d[1]), cost))
-
-        return neighbours
-
-    def find_paths(self):
-        horizon = [(self.start, 0)]
-
-        while len(horizon):
-            # Get min cost node
-            min_cost_node, min_cost = horizon[0]
-            for node, node_cost in horizon:
-                if node_cost < min_cost:
-                    min_cost_node, min_cost = node, node_cost
-
-            self.cost[min_cost_node[0]][min_cost_node[1]] = min_cost
-            neighbours = self.get_neighbours(min_cost_node[0], min_cost_node[1], )
-
-            for node in neighbours:
-                pass'''
-
+        return tiles
 
 if __name__ == "__main__":
     maze = ReindeerMaze("input.txt")
-    print(maze)
     print(maze.find_paths())
+    print(maze.tiles_on_best_path())
+    print(maze)
+
+    tiles = 0
+    for row in maze.maze:
+        for col in row:
+            if col not in ['#', "."]:
+                tiles += 1
+    print(tiles)
 
     '''for row in maze.cost:
         for col in row:
-            print(col if col is not None else "-", end=" ")
+            print(((" "*(col // 100 == 0)) + (" "*(col // 10 == 0)) + str(col)) if col is not None else " -1", end=" ")
         print()'''
