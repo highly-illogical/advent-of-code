@@ -25,10 +25,25 @@ if __name__ == "__main__":
         
         return False
 
-    total = 0
+    @lru_cache
+    def ways(design):
+        total = 0
+
+        if len(design) == 0:
+            return 1
+
+        for i in range(len(design)):
+            # if upto i as one towel in towels, add (ways to make rest of design) to total
+            if design[:i+1] in towels:
+                total += ways(design[i+1:])
+        return total
+
+    '''total = 0
     for design in designs:
         p = possible(design)
         if p:
             total += 1
         print(p)
-    print(total)
+    print(total)'''
+
+    print(sum(ways(design) for design in designs))
