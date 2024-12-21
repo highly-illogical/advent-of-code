@@ -34,10 +34,13 @@ def d1(code):
         elif my == 3 and nx == 0:
             s = [k + v + h + "A" for k in s]
         else:
-            l = [h, v]
-            shuffle(l)
+            #l = [h, v]
+            #shuffle(l)
             #s += l[0] + l[1] + "A"
-            s = [k + h + v + "A" for k in s] + [k + v + h + "A" for k in s]
+            if horizontal < 0:
+                s = [k + h + v + "A" for k in s]
+            else:
+                s = [k + v + h + "A" for k in s]
     return s
 
 def dn(seq):
@@ -57,7 +60,7 @@ def dmove(c1, c2):
         ("A", "^"): "<",
         ("A", "v"): "<v",
         ("A", "<"): "v<<",
-        ("^", ">"): ">v",
+        ("^", ">"): "v>",
         ("^", "v"): "v",
         ("^", "<"): "v<",
         ("^", "A"): ">",
@@ -68,7 +71,7 @@ def dmove(c1, c2):
         ("v", ">"): ">",
         ("v", "^"): "^",
         ("v", "<"): "<",
-        ("v", "A"): ">^",
+        ("v", "A"): "^>",
         ("<", ">"): ">>",
         ("<", "^"): ">^",
         ("<", "v"): ">",
@@ -83,15 +86,64 @@ def dapply(arr, n):
         arr_new = [dn(s) for s in arr_new]
     return arr_new
 
+def dapply_memoized(s):
+    groups = []
+    current = ""
+    a_found = False
+    for i in range(len(s)):
+        if s[i] == "A":
+            a_found = True
+        if a_found and s[i] != "A":
+            a_found = False
+            groups.append(current)
+            current = ""
+        current = current + s[i]
+    groups.append(current)
+    return groups
+
+def transform_group(g):
+    i = 0
+    while g[i] != "A":
+        i = i + 1
+    moves, activations = g[:i+1], g[i+1:]
+    transformed_moves = dn(moves)
+    return transformed_moves + activations
+
 if __name__ == "__main__":
-    codes = read_input("test.txt")
+    codes = read_input("input.txt")
     #print(codes, [d1(code) for code in codes], [dn(d1(code)) for code in codes])
-    total = 0
+    '''total = 0
     for code in codes:
         d = d1(code)
-        k = dapply(d, 2)
+        k = dapply(d, 15)
         lens = [len(s) for s in k]
         minlen = min(lens)
         print(code, lens, minlen)
         total += minlen * int(code.strip("A"))
-    print(total)
+    print(total)'''
+
+    #code = "029A"
+
+    '''for code in codes:
+        d = set(d1(code))
+        print(d)
+        for i in range(5):
+            print([(len(k)) for k in dapply(d, i)])
+        print()'''
+
+    '''da = ["^>A"]
+    db = [">^A"]
+
+    for i in range(10):
+        print([len(k) for k in dapply(da, i)])
+        print([len(k) for k in dapply(db, i)])
+        print()'''
+
+    for code in codes:
+        groups = dapply_memoized(dn(d1(code)[0]))
+        print(groups)
+        s = "".join([dn(group) for group in groups])
+        t = "".join(dapply_memoized(dn(dn(d1(code)[0]))))
+        s = dn(dn(d1(code)[0]))
+        t = "".join([transform_group(g) for g in groups])
+        print(s == t)
