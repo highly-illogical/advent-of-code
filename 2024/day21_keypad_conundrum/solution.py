@@ -125,25 +125,33 @@ def extract_groups(tms):
 if __name__ == "__main__":
     codes = read_input("input.txt")
 
-    #code = "029A"
-
     for code in codes:
         groups = d1(code)
         activations = 0
+        group_dict = {d1(code)[0]: 1}
 
-        for i in range(2):
+        for i in range(4):
             groups_new = []
+            group_dict_new = {}
 
-            for group in groups:
+            for group, count in group_dict.items():
                 g, a = split_groups(dn(group))
-                groups_new.extend(g)
-                activations += a
+                #groups_new.extend(g)
 
-            groups = groups_new
+                for h in g:
+                    if h in group_dict_new:
+                        group_dict_new[h] += count
+                    else:
+                        group_dict_new[h] = count
 
-        print(groups, activations)
-        print(sum(len(g) for g in groups) + activations)
+                activations += a * count
 
-        print(dn(dn(d1(code)[0])))
+            #groups = groups_new
+            group_dict = group_dict_new
+
+        #print(activations, group_dict)
+        print(sum(len(key) * val for key, val in group_dict.items()) + activations)
+        print(len(dn(dn(dn(dn(d1(code)[0]))))))
+        print()
 
     
