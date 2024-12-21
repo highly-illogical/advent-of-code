@@ -44,15 +44,16 @@ def d1(code):
     return s
 
 def dn(seq):
+    seq = "A" + seq + "A"
     s = ""
-    for i in range(len(seq)):
-        c1 = "A" if i == 0 else seq[i-1]
+    for i in range(1, len(seq)):
+        c1 = seq[i-1]
         c2 = seq[i]
 
         if c1 != c2:
             s += dmove(c1, c2)
         s += "A"
-    return s
+    return s[:-1]
 
 def dmove(c1, c2):
     mapping = {
@@ -86,64 +87,63 @@ def dapply(arr, n):
         arr_new = [dn(s) for s in arr_new]
     return arr_new
 
-def dapply_memoized(s):
+def split_groups(s):
     groups = []
     current = ""
     a_found = False
+    a_count = 0
     for i in range(len(s)):
         if s[i] == "A":
             a_found = True
+            a_count += 1
+            continue
         if a_found and s[i] != "A":
             a_found = False
             groups.append(current)
             current = ""
         current = current + s[i]
     groups.append(current)
-    return groups
+    return groups, a_count
 
 def transform_group(g):
     i = 0
     while g[i] != "A":
         i = i + 1
-    moves, activations = g[:i+1], g[i+1:]
+    moves, activations = g[:i], g[i:]
     transformed_moves = dn(moves)
-    return transformed_moves + activations
+    groups = split_groups(transformed_moves)
+    return transformed_moves, len(activations)
+
+def extract_groups(tms):
+    groups = []
+    activations = []
+    for tm in tms:
+        groups.append(tm[0])
+        activations.append(tm[1])
+    return groups, activations
 
 if __name__ == "__main__":
     codes = read_input("input.txt")
-    #print(codes, [d1(code) for code in codes], [dn(d1(code)) for code in codes])
-    '''total = 0
-    for code in codes:
-        d = d1(code)
-        k = dapply(d, 15)
-        lens = [len(s) for s in k]
-        minlen = min(lens)
-        print(code, lens, minlen)
-        total += minlen * int(code.strip("A"))
-    print(total)'''
 
     #code = "029A"
 
-    '''for code in codes:
-        d = set(d1(code))
-        print(d)
-        for i in range(5):
-            print([(len(k)) for k in dapply(d, i)])
-        print()'''
-
-    '''da = ["^>A"]
-    db = [">^A"]
-
-    for i in range(10):
-        print([len(k) for k in dapply(da, i)])
-        print([len(k) for k in dapply(db, i)])
-        print()'''
-
     for code in codes:
-        groups = dapply_memoized(dn(d1(code)[0]))
-        print(groups)
-        s = "".join([dn(group) for group in groups])
-        t = "".join(dapply_memoized(dn(dn(d1(code)[0]))))
-        s = dn(dn(d1(code)[0]))
-        t = "".join([transform_group(g) for g in groups])
-        print(s == t)
+        groups = d1(code)
+        activations = 0
+
+        for i in range(2):
+            groups_new = []
+
+            for group in groups:
+                g, a = split_groups(dn(group))
+                groups_new.extend(g)
+                activations += a
+
+            groups = groups_new
+
+        print(groups, activations)
+        print(sum(len(g) for g in groups) + activations)
+
+        print(dn(dn(d1(code)[0])))
+
+    
