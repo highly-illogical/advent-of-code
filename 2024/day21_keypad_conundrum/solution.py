@@ -125,12 +125,14 @@ def extract_groups(tms):
 if __name__ == "__main__":
     codes = read_input("input.txt")
 
+    total = 0
+
     for code in codes:
         groups = d1(code)
         activations = 0
         group_dict = {d1(code)[0]: 1}
 
-        for i in range(4):
+        for i in range(25):
             groups_new = []
             group_dict_new = {}
 
@@ -150,8 +152,10 @@ if __name__ == "__main__":
             group_dict = group_dict_new
 
         #print(activations, group_dict)
-        print(sum(len(key) * val for key, val in group_dict.items()) + activations)
-        print(len(dn(dn(dn(dn(d1(code)[0]))))))
-        print()
+        print(code, sum(len(key) * val for key, val in group_dict.items()) + activations)
+        total += int(code[:-1]) * (sum(len(key) * val for key, val in group_dict.items()) + activations)
+        #print(len(dn(dn(dn(dn(d1(code)[0]))))))
+        #print()
+    print(total)
 
     
