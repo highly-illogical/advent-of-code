@@ -1,3 +1,5 @@
+from random import randint
+
 class Gate:
     def __init__(self, gate_type, inputs, output):
         self.type = gate_type
@@ -8,14 +10,15 @@ class Gate:
         return(f"{self.inputs[0]} {self.type} {self.inputs[1]} -> {self.output}")
 
 class CrossedWires:
-    def __init__(self, filename):
+    def __init__(self, filename=None, wires=None):
         self.wires = {}
         self.gates = []
         self._read_input(filename)
 
-    def _read_input(self, filename):
+    def _read_input(self, filename, wires=None):
         with open(filename) as file:
             wires, gates = file.read().strip().split("\n\n")
+
             wires = wires.split("\n")
             gates = gates.split("\n")
 
@@ -38,8 +41,12 @@ class CrossedWires:
 
                 self.gates.append(Gate(gate_type, inputs, output))
 
+        self.gates_dict = {}
+        for gate in self.gates:
+            self.gates_dict[gate.output] = gate
+
     def apply_gate(self, gate):
-        print(gate)
+        #print(gate)
         operations_dict = {
             "AND": (lambda x, y: x & y),
             "OR": (lambda x, y: x | y),
@@ -76,13 +83,38 @@ class CrossedWires:
                 n += str(self.wires[wire])
         return int(n[::-1], 2)
 
+    def get_expression(self, wire):
+        gate_dict = {}
+        for gate in self.gates:
+            gate_dict[gate.output] = gate
+
+        wire_stack = [wire]
+        s = wire
+
+        while wire_stack:
+            w = wire_stack.pop()
+
+            if w in gate_dict:
+                gate = gate_dict[w]
+                s = s.replace(w, f"({gate.inputs[0]} {gate.type} {gate.inputs[1]})")
+                wire_stack.extend(gate.inputs)
+
+        return s
+
+    def initialize(self, a, b):
+        for wire in self.wires.keys():
+            self.wires[wire] = None
+
+        for i in range(45):
+            x = a % 2
+            y = b % 2
+            a //= 2
+            b //= 2
+
+            self.wires["x" + str(i).zfill(2)] = x
+            self.wires["y" + str(i).zfill(2)] = y
+
+
 if __name__ == "__main__":
     w = CrossedWires("input.txt")
-    print(w.wires)
     w.find_outputs()
-
-    for key in sorted(w.wires.keys()):
-        print(f"{key}: {w.wires[key]}")
-
-    print(w.get_number("z"))
-
